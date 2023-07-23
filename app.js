@@ -5,8 +5,9 @@ import { Neo4jGraphQL } from "@neo4j/graphql";
 import cookieParser from 'cookie-parser';
 import neo4j from "neo4j-driver";
 import typeDefs from "./schema.js"
+import resolvers from './resolvers.js';
 import 'dotenv/config'
-import cors from 'cors'
+// import cors from 'cors'
 
 const driver = neo4j.driver(
     process.env.NEO4J_URI,
@@ -25,6 +26,8 @@ app.use(cookieParser()
 const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
 const server = new ApolloServer({
    schema: await neoSchema.getSchema(),
+   typeDefs,
+   resolvers
 });
 
 const { url } = await startStandaloneServer(server, {
