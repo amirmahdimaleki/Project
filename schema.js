@@ -1,6 +1,6 @@
 //* define gql types here (schema)
 
- const typeDefs =`#graphql
+ export const typeDefs =`#graphql
     type Todo{
         id: ID!
         title: String!
@@ -41,5 +41,3 @@ const userSchema = `#graphql
         required: true
     }
 `
-
-export default typeDefs
