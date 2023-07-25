@@ -19,7 +19,7 @@ const driver = neo4j.driver(
 // accessing db
 const session = driver.session();
 const cypherQuery = "MATCH (n) RETURN n";
-session.run(cypherQuery)
+const data = session.run(cypherQuery)
   .then(result => {
     result.records.forEach(record => {
       // Access data for each node, e.g. record.get('n').properties
@@ -34,6 +34,8 @@ session.run(cypherQuery)
     driver.close();
   });
 
+
+  console.log("===========================",)
 //  ==================================================================================
 
 const app = express()
@@ -59,13 +61,8 @@ const resolvers = {
        }
    },
 
-   // ?     is this needed?
-   // User: {
-   //  .   todos(parent){
-   //         return neoSchema._nodes.filter(u => u.id === parent.id)
-   //     }
-   // },
-
+   // ?   **  is this needed?
+   
    Mutations: {
        addTodo(_, args){
            let todo = {
@@ -112,3 +109,19 @@ const { url } = await startStandaloneServer(server, {
    listen: { port: 4000 },
 });
 console.log(` Server running at ${url}`);
+
+
+app.listen(4001 ,(err) => {
+  err && console.log("Error")
+  console.log('server is ready')
+})
+
+
+// ====================================================================================
+
+
+// -> ** User: {
+   //  .   todos(parent){
+   //         return neoSchema._nodes.filter(u => u.id === parent.id)
+   //     }
+   // },
