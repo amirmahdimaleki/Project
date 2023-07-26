@@ -1,13 +1,14 @@
 import express from 'express'
-import { ApolloServer } from '@apollo/server';
-import { startStandaloneServer } from '@apollo/server/standalone';
-import { Neo4jGraphQL } from "@neo4j/graphql";
-import cookieParser from 'cookie-parser';
-import neo4j from "neo4j-driver";
-import {typeDefs} from "./schema.js"
-// import resolvers from './resolvers.js';
+import { ApolloServer } from '@apollo/server'
+import { startStandaloneServer } from '@apollo/server/standalone'
+import { Neo4jGraphQL } from "@neo4j/graphql"
+import cookieParser from 'cookie-parser'
+import neo4j from "neo4j-driver"
+import  {OGM}  from "@neo4j/graphql-ogm"
+import  {Neo4jGraphQLAuthJWTPlugin}  from "@neo4j/graphql-plugin-auth"
+import { typeDefs } from "./schema.js"
 import 'dotenv/config'
-// import cors from 'cors'
+import { createJWT, comparePassword } from './utils.js'
 
 // =====================================================================================
 
@@ -40,9 +41,12 @@ const data = session.run(cypherQuery)
 
 const app = express()
 app.use(express.json())
-app.use(cookieParser()
-)
+app.use(cookieParser())
+
 const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
+const ogm = new OGM({ typeDefs, driver });
+const User = ogm.model("User");
+
 
 // ===================================================================================
 
@@ -56,12 +60,12 @@ const resolvers = {
        todo(_, args){
            console.log("todos")
 
-// the _ is "parent"  but don't needed here. there is a third one called context that we don't need it either
            return neoSchema._nodes.find(todo => todo.id === args.id)
+                // _ (parent) and context args are not needed here
        }
    },
 
-   // ?   **  is this needed?
+   // ? **  is this needed?
    
    Mutations: {
        addTodo(_, args){
@@ -92,23 +96,76 @@ const resolvers = {
              })
              console.log("todos")
 
-             return db.todos.find((todo) => g.id === args.id)
-       }
-   }
+             return db.todos.find((todo) => todo.id === args.id)
+       },
+
+      //  authentication set up
+      // ----------------------------------------------------------------------------
+       signUp: async (_source, { username, password }) => {
+        const [existing] = await User.find({
+            where: {
+                username,
+            },
+        });
+        if (existing) {
+            throw new Error(`User with username ${username} already exists!`);
+        }
+        const { users } = await User.create({
+            input: [
+                {
+                    username,
+                    password,
+                }
+            ]
+        });
+        return createJWT({ sub: users[0].id });
+    },
+    // -------------------------------------------------------------------------------
+
+    signIn: async (_source, { username, password }) => {
+        const [user] = await User.find({
+            where: {
+                username,
+            },
+        });
+        if (!user) {
+            throw new Error(`User with username ${username} not found!`);
+        }
+        const correctPassword = await comparePassword(password, user.password);
+        if (!correctPassword) {
+            throw new Error(`Incorrect password for user with username ${username}!`);
+        }
+        return createJWT({ sub: user.id });
+    },
+  }
+
 }
+
 
 // =====================================================================================
 
 const server = new ApolloServer({
    schema: await neoSchema.getSchema(),
    typeDefs,
-   resolvers
+   resolvers,
+   plugins: {
+    auth: new Neo4jGraphQLAuthJWTPlugin({
+      secret: process.env.JWT_SECRET
+    })
+   }
 });
-const { url } = await startStandaloneServer(server, {
-   context: async ({ req }) => ({ req }),
-   listen: { port: 4000 },
+
+Promise.all([neoSchema.getSchema(), ogm.init()]).then(([schema]) => {
+  const server = new ApolloServer({
+      schema,
+  });
+
+  startStandaloneServer(server, {
+      context: async ({ req }) => ({ req }),
+  }).then(({ url }) =>  {
+      console.log(`🚀 Server ready at ${url}`);
+  });
 });
-console.log(` Server running at ${url}`);
 
 
 app.listen(4001 ,(err) => {
