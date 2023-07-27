@@ -1,11 +1,14 @@
+
 import express from 'express'
 import { ApolloServer } from '@apollo/server'
 import { startStandaloneServer } from '@apollo/server/standalone'
 import { Neo4jGraphQL } from "@neo4j/graphql"
 import cookieParser from 'cookie-parser'
 import neo4j from "neo4j-driver"
-import  {OGM}  from "@neo4j/graphql-ogm"
-import  {Neo4jGraphQLAuthJWTPlugin}  from "@neo4j/graphql-plugin-auth"
+import ogmPkg from  "@neo4j/graphql-ogm"
+const  { OGM } = ogmPkg
+import authPkg from "@neo4j/graphql-plugin-auth"
+const  { Neo4jGraphQLAuthJWTPlugin } = authPkg
 import { typeDefs } from "./schema.js"
 import 'dotenv/config'
 import { createJWT, comparePassword } from './utils.js'
@@ -17,27 +20,31 @@ const driver = neo4j.driver(
     neo4j.auth.basic("neo4j", process.env.NEO4J_PASSWORD)
 );
 
-// accessing db
-const session = driver.session();
-const cypherQuery = "MATCH (n) RETURN n";
-const data = session.run(cypherQuery)
-  .then(result => {
-    result.records.forEach(record => {
-      // Access data for each node, e.g. record.get('n').properties
-      console.log(record.get('n').properties);
+//  one way of accessing db created bt you.com
+const catcher = () => {
+  const session = driver.session();
+  const cypherQuery = "MATCH (n) RETURN n";
+  session.run(cypherQuery)
+    .then(result => {
+      result.records.forEach(record => {
+        // Access data for each node, e.g. record.get('n').properties
+        console.log(record.get('n').properties);
+      });
+    })
+    .catch(error => {
+      console.error(error);
+    })
+    .finally(() => {
+      session.close();
+      driver.close();
     });
-  })
-  .catch(error => {
-    console.error(error);
-  })
-  .finally(() => {
-    session.close();
-    driver.close();
-  });
+}
 
 
-  console.log("===========================",)
-//  ==================================================================================
+
+  console.log("===========================", catcher())
+  
+  //  ==================================================================================
 
 const app = express()
 app.use(express.json())
@@ -47,57 +54,56 @@ const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
 const ogm = new OGM({ typeDefs, driver });
 const User = ogm.model("User");
 
-
 // ===================================================================================
-
+// todo : fix this problem -> caused by db (look at logged data)
 const resolvers = {
-   Query: {
+  //  Query: {
 
-       todos(){
-           console.log("todos")
-           return neoSchema._nodes
-       },
-       todo(_, args){
-           console.log("todos")
+  //      todos(){
+  //          console.log("todos")
+  //          return neoSchema._nodes
+  //      },
+  //      todo(_, args){
+  //          console.log("todos")
 
-           return neoSchema._nodes.find(todo => todo.id === args.id)
-                // _ (parent) and context args are not needed here
-       }
-   },
+  //          return neoSchema._nodes.find(todo => todo.id === args.id)
+  //               // _ (parent) and context args are not needed here
+  //      }
+  //  },
 
    // ? **  is this needed?
    
    Mutations: {
-       addTodo(_, args){
-           let todo = {
-               ...args.todo, 
-               id: Math.floor(Math.random() * 10000).toString()
-             }
-             db.todos.push(todo)
-             console.log("todos")
+      //  addTodo(_, args){
+      //      let todo = {
+      //          ...args.todo, 
+      //          id: Math.floor(Math.random() * 10000).toString()
+      //        }
+      //        db.todos.push(todo)
+      //        console.log("todos")
 
-             return todo
-       },  
+      //        return todo
+      //  },  
 
-       deleteTodo(_, args){
-           db.todos = db.todos.filter((todo) => todo.id !== args.id)
-           console.log("todos")
+      //  deleteTodo(_, args){
+      //      db.todos = db.todos.filter((todo) => todo.id !== args.id)
+      //      console.log("todos")
 
-           return db.todos
-       },
+      //      return db.todos
+      //  },
 
-       updateTodo(_, args){
-           db.todos = db.todos.map((todo) => {
-               if (todo.id === args.id) {
-                 return {...todo, ...args.edits}
-               }
+      //  updateTodo(_, args){
+      //      db.todos = db.todos.map((todo) => {
+      //          if (todo.id === args.id) {
+      //            return {...todo, ...args.edits}
+      //          }
        
-               return todo
-             })
-             console.log("todos")
+      //          return todo
+      //        })
+      //        console.log("todos")
 
-             return db.todos.find((todo) => todo.id === args.id)
-       },
+      //        return db.todos.find((todo) => todo.id === args.id)
+      //  },
 
       //  authentication set up
       // ----------------------------------------------------------------------------

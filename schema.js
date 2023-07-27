@@ -14,7 +14,6 @@
         password: String! @private
         todo: [Todo!]
     }
-
     # Query type is necessary 
     type Query{
         todos: [Todo]
@@ -30,7 +29,6 @@
         signUp(username: String!, password: String!): String! ### JWT
         signIn(username: String!, password: String!): String! ### JWT
     }
-
     # inputs
     input addtodoInput{
         title: String!
