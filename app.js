@@ -57,53 +57,53 @@ const User = ogm.model("User");
 // ===================================================================================
 // todo : fix this problem -> caused by db (look at logged data)
 const resolvers = {
-  //  Query: {
+   Query: {
 
-  //      todos(){
-  //          console.log("todos")
-  //          return neoSchema._nodes
-  //      },
-  //      todo(_, args){
-  //          console.log("todos")
+       todos(){
+           console.log("todos")
+           return neoSchema._nodes
+       },
+       todo(_, args){
+           console.log("todos")
 
-  //          return neoSchema._nodes.find(todo => todo.id === args.id)
-  //               // _ (parent) and context args are not needed here
-  //      }
-  //  },
+           return neoSchema._nodes.find(todo => todo.id === args.id)
+                // _ (parent) and context args are not needed here
+       }
+   },
 
    // ? **  is this needed?
    
    Mutations: {
-      //  addTodo(_, args){
-      //      let todo = {
-      //          ...args.todo, 
-      //          id: Math.floor(Math.random() * 10000).toString()
-      //        }
-      //        db.todos.push(todo)
-      //        console.log("todos")
+       addTodo(_, args){
+           let todo = {
+               ...args.todo, 
+               id: Math.floor(Math.random() * 10000).toString()
+             }
+             db.todos.push(todo)
+             console.log("todos")
 
-      //        return todo
-      //  },  
+             return todo
+       },  
 
-      //  deleteTodo(_, args){
-      //      db.todos = db.todos.filter((todo) => todo.id !== args.id)
-      //      console.log("todos")
+       deleteTodo(_, args){
+           db.todos = db.todos.filter((todo) => todo.id !== args.id)
+           console.log("todos")
 
-      //      return db.todos
-      //  },
+           return db.todos
+       },
 
-      //  updateTodo(_, args){
-      //      db.todos = db.todos.map((todo) => {
-      //          if (todo.id === args.id) {
-      //            return {...todo, ...args.edits}
-      //          }
+       updateTodo(_, args){
+           db.todos = db.todos.map((todo) => {
+               if (todo.id === args.id) {
+                 return {...todo, ...args.edits}
+               }
        
-      //          return todo
-      //        })
-      //        console.log("todos")
+               return todo
+             })
+             console.log("todos")
 
-      //        return db.todos.find((todo) => todo.id === args.id)
-      //  },
+             return db.todos.find((todo) => todo.id === args.id)
+       },
 
       //  authentication set up
       // ----------------------------------------------------------------------------
