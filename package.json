@@ -1,6 +1,16 @@
 {
   "type": "module",
-  "dependencies": {
+	"scripts": {
+		"test": "jest"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+    "jest": "^29.6.1",
+    "nodemon": "^3.0.1"
+  },
+	"dependencies": {
     "@apollo/server": "^4.8.0",
     "@neo4j/graphql": "^3.24.0",
     "@neo4j/graphql-ogm": "^3.24.0",
@@ -15,9 +25,5 @@
     "jsonwebtoken": "^9.0.1",
     "neo4j-driver": "^5.10.0",
     "validator": "^13.9.0"
-  },
-  "devDependencies": {
-    "jest": "^29.6.1",
-    "nodemon": "^3.0.1"
   }
 }

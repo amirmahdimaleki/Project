@@ -50,14 +50,13 @@ const app = express()
 app.use(express.json())
 app.use(cookieParser())
 
-const neoSchema = new Neo4jGraphQL({ typeDefs, driver });
 const ogm = new OGM({ typeDefs, driver });
 const User = ogm.model("User");
 
 // ===================================================================================
 // todo : fix this problem -> caused by db (look at logged data)
 const resolvers = {
-   Query: {
+  Query: {
 
        todos(){
            console.log("todos")
@@ -73,13 +72,13 @@ const resolvers = {
 
    // ? **  is this needed?
    
-   Mutations: {
-       addTodo(_, args){
+   Mutation: {
+     addTodo(_, args){
            let todo = {
                ...args.todo, 
                id: Math.floor(Math.random() * 10000).toString()
-             }
-             db.todos.push(todo)
+              }
+              db.todos.push(todo)
              console.log("todos")
 
              return todo
@@ -88,78 +87,88 @@ const resolvers = {
        deleteTodo(_, args){
            db.todos = db.todos.filter((todo) => todo.id !== args.id)
            console.log("todos")
-
+           
            return db.todos
-       },
-
-       updateTodo(_, args){
+          },
+          
+          updateTodo(_, args){
            db.todos = db.todos.map((todo) => {
-               if (todo.id === args.id) {
-                 return {...todo, ...args.edits}
-               }
+             if (todo.id === args.id) {
+               return {...todo, ...args.edits}
+              }
        
                return todo
              })
              console.log("todos")
-
+             
              return db.todos.find((todo) => todo.id === args.id)
        },
-
-      //  authentication set up
+       
+       //  authentication set up
       // ----------------------------------------------------------------------------
-       signUp: async (_source, { username, password }) => {
+      signUp: async (_source, { username, password }) => {
         const [existing] = await User.find({
-            where: {
-                username,
+          where: {
+            username,
             },
         });
         if (existing) {
-            throw new Error(`User with username ${username} already exists!`);
+          throw new Error(`User with username ${username} already exists!`);
         }
         const { users } = await User.create({
-            input: [
-                {
+          input: [
+            {
                     username,
                     password,
-                }
+                  }
             ]
-        });
-        return createJWT({ sub: users[0].id });
-    },
+          });
+          return createJWT({ sub: users[0].id });
+        },
     // -------------------------------------------------------------------------------
-
+    
     signIn: async (_source, { username, password }) => {
-        const [user] = await User.find({
-            where: {
-                username,
-            },
-        });
-        if (!user) {
-            throw new Error(`User with username ${username} not found!`);
-        }
-        const correctPassword = await comparePassword(password, user.password);
-        if (!correctPassword) {
-            throw new Error(`Incorrect password for user with username ${username}!`);
-        }
-        return createJWT({ sub: user.id });
+      const [user] = await User.find({
+        where: {
+          username,
+        },
+      });
+      if (!user) {
+        throw new Error(`User with username ${username} not found!`);
+      }
+      const correctPassword = await comparePassword(password, user.password);
+      if (!correctPassword) {
+        throw new Error(`Incorrect password for user with username ${username}!`);
+      }
+      return createJWT({ sub: user.id });
     },
   }
-
+  
 }
 
+const neoSchema = new Neo4jGraphQL({
+  typeDefs,
+  driver,
+  resolvers,
+  plugins: {
+      auth: new Neo4jGraphQLAuthJWTPlugin({
+          secret: process.env.JWT_SECRET
+      })
+  }
+});
 
 // =====================================================================================
 
-const server = new ApolloServer({
-   schema: await neoSchema.getSchema(),
-   typeDefs,
-   resolvers,
-   plugins: {
-    auth: new Neo4jGraphQLAuthJWTPlugin({
-      secret: process.env.JWT_SECRET
-    })
-   }
-});
+// const server = new ApolloServer({
+//    schema: await neoSchema.getSchema(),
+//    typeDefs,
+//    resolvers,
+//    plugins: {
+//     auth: new Neo4jGraphQLAuthJWTPlugin({
+//       secret: process.env.JWT_SECRET
+//     })
+//    }
+// });
 
 Promise.all([neoSchema.getSchema(), ogm.init()]).then(([schema]) => {
   const server = new ApolloServer({
