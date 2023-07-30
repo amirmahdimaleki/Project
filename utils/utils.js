@@ -1,9 +1,10 @@
-// *  to be imported in app.js
+// ~ to be imported in app.js
 
 import jwt from 'jsonwebtoken'
 import bcrypt from'bcrypt'
 import 'dotenv/config'
 
+// simply creates a jwt token
 export const createJWT = () => {
     return new Promise((resolve, reject) => {
         jwt.sign(process.env.JWT_SECRET, (err, token) => {
@@ -16,7 +17,7 @@ export const createJWT = () => {
         })
     })
 }
-
+// does hashing a comparing passwords in a single function
 export const comparePassword = (plainText, hash) => {
     return new Promise((resolve, reject) => {
         bcrypt.compare(plainText, hash, (err, result) => {

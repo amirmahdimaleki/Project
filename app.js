@@ -11,7 +11,7 @@ import authPkg from "@neo4j/graphql-plugin-auth"
 const  { Neo4jGraphQLAuthJWTPlugin } = authPkg
 import { typeDefs } from "./schema.js"
 import 'dotenv/config'
-import { createJWT, comparePassword } from './utils.js'
+import { createJWT, comparePassword } from './utils/utils.js'
 
 // =====================================================================================
 
@@ -20,30 +20,6 @@ const driver = neo4j.driver(
     neo4j.auth.basic("neo4j", process.env.NEO4J_PASSWORD)
 );
 
-//  one way of accessing db created bt you.com
-const catcher = () => {
-  const session = driver.session();
-  const cypherQuery = "MATCH (n) RETURN n";
-  session.run(cypherQuery)
-    .then(result => {
-      result.records.forEach(record => {
-        // Access data for each node, e.g. record.get('n').properties
-        console.log(record.get('n').properties);
-      });
-    })
-    .catch(error => {
-      console.error(error);
-    })
-    .finally(() => {
-      session.close();
-      driver.close();
-    });
-}
-
-
-
-  console.log("===========================", catcher())
-  
   //  ==================================================================================
 
 const app = express()
@@ -54,57 +30,71 @@ const ogm = new OGM({ typeDefs, driver });
 const User = ogm.model("User");
 
 // ===================================================================================
-// todo : fix this problem -> caused by db (look at logged data)
+
 const resolvers = {
-  Query: {
+  //~ user field inspired by dear Negar Miralaei's project 
+   User: {
+    // !Typically you do not need to write this bc it is automatically generated in neo4-graphql but in that way, If you query for users and their todos, if that user does not have any todo, it will throw an error bc nothing should be null in neo4j-graphql, so for returning null, empty array, you must create this on your own!
+    todos: async (parent, args, context, info) => {
+        const todos = await context.db.run(`MATCH (u:User {id: "${parent.id}"})-[:HAS_TODO]->(t:Todo) RETURN t`);
+    
+        // If todos or todos.records is null or not an array, return an empty array
+        if (!todos || !Array.isArray(todos.records)) {
+            return [];
+        }
+    
+        // Otherwise, return the todos
+        return todos.records.map(record => record.get('t').properties);
+    },
+},
 
-       todos(){
-           console.log("todos")
-           return neoSchema._nodes
-       },
-       todo(_, args){
-           console.log("todos")
-
-           return neoSchema._nodes.find(todo => todo.id === args.id)
-                // _ (parent) and context args are not needed here
-       }
-   },
-
-   // ? **  is this needed?
-   
    Mutation: {
-     addTodo(_, args){
-           let todo = {
-               ...args.todo, 
-               id: Math.floor(Math.random() * 10000).toString()
-              }
-              db.todos.push(todo)
-             console.log("todos")
+    addTodo: async (_, args, context, info) => {
+      const session = neoSchema.driver.session();
+      try {
+      const query = `
+          CREATE (t:Todo { id: randomUUID(), title: $title, completed: $completed })
+          RETURN t
+      `;
+      const result = await session.run(query, args);
+      return result.records[0].get('t').properties;
+      } finally {
+      session.close();
+      }
+  },
 
-             return todo
-       },  
+  updateTodo: async (parent, args, context, info) => {
+      const { id, title } = args;
 
-       deleteTodo(_, args){
-           db.todos = db.todos.filter((todo) => todo.id !== args.id)
-           console.log("todos")
-           
-           return db.todos
-          },
-          
-          updateTodo(_, args){
-           db.todos = db.todos.map((todo) => {
-             if (todo.id === args.id) {
-               return {...todo, ...args.edits}
-              }
-       
-               return todo
-             })
-             console.log("todos")
-             
-             return db.todos.find((todo) => todo.id === args.id)
-       },
-       
-       //  authentication set up
+      const updateQuery = `SET t.title = "${title}"`;
+
+      const query = `MATCH (t:Todo {id: "${id}"}) ${updateQuery} RETURN t`;
+      const todo = await context.db.run(query);
+      
+      if (!todo.records || todo.records.length === 0) {
+          throw new Error("Todo not found");
+      }
+      return todo.records[0].get('t').properties;
+  },
+
+  deleteTodo: async (parent, args, context, info) => {
+      const { id } = args;
+
+      // Assuming all todos are connected with an OWNER relationship
+      const query = `
+          MATCH (t:Todo {id: "${id}"})
+          OPTIONAL MATCH (t)-[r]-()
+          DELETE t, r
+      `;
+      try {
+          await context.db.run(query);
+          return `Todo with id ${id} deleted successfully`;
+      } catch (error) {
+          throw new Error(`Failed to delete Todo: ${error}`);
+      }
+  },
+
+       // ^ authentication set up
       // ----------------------------------------------------------------------------
       signUp: async (_source, { username, password }) => {
         const [existing] = await User.find({
@@ -159,17 +149,6 @@ const neoSchema = new Neo4jGraphQL({
 
 // =====================================================================================
 
-// const server = new ApolloServer({
-//    schema: await neoSchema.getSchema(),
-//    typeDefs,
-//    resolvers,
-//    plugins: {
-//     auth: new Neo4jGraphQLAuthJWTPlugin({
-//       secret: process.env.JWT_SECRET
-//     })
-//    }
-// });
-
 Promise.all([neoSchema.getSchema(), ogm.init()]).then(([schema]) => {
   const server = new ApolloServer({
       schema,
@@ -188,12 +167,3 @@ app.listen(4001 ,(err) => {
   console.log('server is ready')
 })
 
-
-// ====================================================================================
-
-
-// -> ** User: {
-   //  .   todos(parent){
-   //         return neoSchema._nodes.filter(u => u.id === parent.id)
-   //     }
-   // },

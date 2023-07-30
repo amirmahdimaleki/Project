@@ -6,13 +6,17 @@
         title: String!
         description: String,
         done:Boolean!
-        author: User!
+        author: User! @relationship(type: "HAS_TODO", direction: OUT)
     }
     type User{
         id: ID! @id
         username: String!
         password: String! @private
-        todo: [Todo!]
+        todos: [Todo!]! @relationship(type: "HAS_TODO", direction: IN)
+    }
+    type AuthPayload {
+        token: String!
+        user: User!
     }
     # Query type is necessary 
     type Query{
@@ -26,8 +30,8 @@
         addTodo(todo: addtodoInput!) : Todo
         deleteTodo(id: ID!) : [Todo]
         updateTodo(id: ID!, edits: editTodoInput) : Todo \
-        signUp(username: String!, password: String!): String! ### JWT
-        signIn(username: String!, password: String!): String! ### JWT
+        signUp(username: String!, password: String!): AuthPayload ### JWT
+        signIn(username: String!, password: String!): AuthPayload ### JWT
     }
     # inputs
     input addtodoInput{
@@ -43,10 +47,3 @@
 `
 
 
-
-const userSchema = `#graphql
-    type email{
-        id:ID!
-        required: true
-    }
-`
