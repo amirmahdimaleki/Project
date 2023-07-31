@@ -1,3 +1,4 @@
+// ^ dear reviewer, sorry for my codes untidiness caused by lack of time, I know it could be much cleaner 
 
 import express from 'express'
 import { ApolloServer } from '@apollo/server'
@@ -43,7 +44,7 @@ const resolvers = {
             return [];
         }
     
-        // Otherwise, return the todos
+
         return todos.records.map(record => record.get('t').properties);
     },
 },
