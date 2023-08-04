@@ -12,7 +12,7 @@ import authPkg from "@neo4j/graphql-plugin-auth"
 const  { Neo4jGraphQLAuthJWTPlugin } = authPkg
 import { typeDefs } from "./schema.js"
 import 'dotenv/config'
-import { createJWT, comparePassword } from './utils/utils.js'
+import { createJWT, comparePassword } from './utils.js'
 
 // =====================================================================================
 
