@@ -21,6 +21,7 @@ const driver = neo4j.driver(
     neo4j.auth.basic("neo4j", process.env.NEO4J_PASSWORD)
 );
 
+const session = driver.session()
   //  ==================================================================================
 
 const app = express()
@@ -37,7 +38,7 @@ const resolvers = {
    User: {
     // !Typically you do not need to write this bc it is automatically generated in neo4-graphql but in that way, If you query for users and their todos, if that user does not have any todo, it will throw an error bc nothing should be null in neo4j-graphql, so for returning null, empty array, you must create this on your own!
     todos: async (parent, args, context, info) => {
-        const todos = await context.db.run(`MATCH (u:User {id: "${parent.id}"})-[:HAS_TODO]->(t:Todo) RETURN t`);
+        const todos = await session.run(`MATCH (u:User {id: "${parent.id}"})-[:HAS_TODO]->(t:Todo) RETURN t`);
     
         // If todos or todos.records is null or not an array, return an empty array
         if (!todos || !Array.isArray(todos.records)) {
@@ -70,7 +71,7 @@ const resolvers = {
       const updateQuery = `SET t.title = "${title}"`;
 
       const query = `MATCH (t:Todo {id: "${id}"}) ${updateQuery} RETURN t`;
-      const todo = await context.db.run(query);
+      const todo = await session.run(query);
       
       if (!todo.records || todo.records.length === 0) {
           throw new Error("Todo not found");
@@ -88,7 +89,7 @@ const resolvers = {
           DELETE t, r
       `;
       try {
-          await context.db.run(query);
+          await session.run(query);
           return `Todo with id ${id} deleted successfully`;
       } catch (error) {
           throw new Error(`Failed to delete Todo: ${error}`);
