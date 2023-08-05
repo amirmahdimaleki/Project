@@ -1,5 +1,6 @@
-import { comparePassword } from "./utils/utils";
-import bcrypt from "bcrypt";
+const createJWT = require ('./utils.js')
+const comparePassword = require ('./utils.js')
+const bcrypt = require ('bcrypt');
 
 describe("comparePassword", () => {
   it("should return a promise that resolves to true if the passwords match", async () => {
