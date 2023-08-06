@@ -21,6 +21,10 @@ const driver = neo4j.driver(
     neo4j.auth.basic("neo4j", process.env.NEO4J_PASSWORD)
 );
 
+ const serverInfo = await driver.getServerInfo()
+    console.log('Connection established')
+    console.log(serverInfo)
+
 const session = driver.session()
   //  ==================================================================================
 
