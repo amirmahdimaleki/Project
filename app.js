@@ -26,7 +26,7 @@ const driver = neo4j.driver(
     console.log(serverInfo)
 
 const session = driver.session()
-  //  ==================================================================================
+//  ==================================================================================
 
 const app = express()
 app.use(express.json())
@@ -34,6 +34,7 @@ app.use(cookieParser())
 
 const ogm = new OGM({ typeDefs, driver });
 const User = ogm.model("User");
+
 
 // ===================================================================================
 
@@ -49,56 +50,55 @@ const resolvers = {
             return [];
         }
     
-
         return todos.records.map(record => record.get('t').properties);
     },
 },
 
    Mutation: {
-    addTodo: async (_, args, context, info) => {
-      const session = neoSchema.driver.session();
-      try {
-      const query = `
-          CREATE (t:Todo { id: randomUUID(), title: $title, completed: $completed })
-          RETURN t
-      `;
-      const result = await session.run(query, args);
-      return result.records[0].get('t').properties;
-      } finally {
-      session.close();
-      }
-  },
+  //   addTodo: async (_, args, context, info) => {
+  //     const session = neoSchema.driver.session();
+  //     try {
+  //     const query = `
+  //         CREATE (t:Todo { id: randomUUID(), title: $title, completed: $completed })
+  //         RETURN t
+  //     `;
+  //     const result = await session.run(query, args);
+  //     return result.records[0].get('t').properties;
+  //     } finally {
+  //     session.close();
+  //     }
+  // },
 
-  updateTodo: async (parent, args, context, info) => {
-      const { id, title } = args;
+  // updateTodo: async (parent, args, context, info) => {
+  //     const { id, title } = args;
 
-      const updateQuery = `SET t.title = "${title}"`;
+  //     const updateQuery = `SET t.title = "${title}"`;
 
-      const query = `MATCH (t:Todo {id: "${id}"}) ${updateQuery} RETURN t`;
-      const todo = await session.run(query);
+  //     const query = `MATCH (t:Todo {id: "${id}"}) ${updateQuery} RETURN t`;
+  //     const todo = await session.run(query);
       
-      if (!todo.records || todo.records.length === 0) {
-          throw new Error("Todo not found");
-      }
-      return todo.records[0].get('t').properties;
-  },
+  //     if (!todo.records || todo.records.length === 0) {
+  //         throw new Error("Todo not found");
+  //     }
+  //     return todo.records[0].get('t').properties;
+  // },
 
-  deleteTodo: async (parent, args, context, info) => {
-      const { id } = args;
+  // deleteTodo: async (parent, args, context, info) => {
+  //     const { id } = args;
 
-      // Assuming all todos are connected with an OWNER relationship
-      const query = `
-          MATCH (t:Todo {id: "${id}"})
-          OPTIONAL MATCH (t)-[r]-()
-          DELETE t, r
-      `;
-      try {
-          await session.run(query);
-          return `Todo with id ${id} deleted successfully`;
-      } catch (error) {
-          throw new Error(`Failed to delete Todo: ${error}`);
-      }
-  },
+  //     // Assuming all todos are connected with an OWNER relationship
+  //     const query = `
+  //         MATCH (t:Todo {id: "${id}"})
+  //         OPTIONAL MATCH (t)-[r]-()
+  //         DELETE t, r
+  //     `;
+  //     try {
+  //         await session.run(query);
+  //         return `Todo with id ${id} deleted successfully`;
+  //     } catch (error) {
+  //         throw new Error(`Failed to delete Todo: ${error}`);
+  //     }
+  // },
 
        // ^ authentication set up
       // ----------------------------------------------------------------------------
